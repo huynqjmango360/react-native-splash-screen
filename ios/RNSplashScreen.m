@@ -40,7 +40,7 @@ RCT_EXPORT_MODULE(SplashScreen)
         loadingView.frame = frame;
     }
     waiting = false;
-    
+
     [rootView addSubview:loadingView];
 }
 
@@ -66,7 +66,7 @@ RCT_EXPORT_METHOD(hide) {
     [RNSplashScreen hide];
 }
 
-RCT_EXPORT_METHOD(show) {
+RCT_EXPORT_METHOD(show: (BOOL*)fullScreen ) {
     [RNSplashScreen show];
 }
 
