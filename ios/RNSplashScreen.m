@@ -34,10 +34,14 @@ RCT_EXPORT_MODULE(SplashScreen)
 
 + (void)showSplash:(NSString*)splashScreen inRootView:(UIView*)rootView {
     if (!loadingView) {
-        loadingView = [[[NSBundle mainBundle] loadNibNamed:splashScreen owner:self options:nil] objectAtIndex:0];
+        UIStoryboard *laucnhScreeen = [UIStoryboard storyboardWithName:splashScreen bundle:NSBundle.mainBundle];
+
+//        loadingView = [[[NSBundle mainBundle] loadNibNamed:splashScreen owner:self options:nil] objectAtIndex:0];
+        loadingView = [[laucnhScreeen instantiateInitialViewController] view];
         CGRect frame = rootView.frame;
         frame.origin = CGPointMake(0, 0);
         loadingView.frame = frame;
+
     }
     waiting = false;
 
@@ -67,7 +71,9 @@ RCT_EXPORT_METHOD(hide) {
 }
 
 RCT_EXPORT_METHOD(show: (BOOL*)fullScreen ) {
-    [RNSplashScreen show];
+    UIViewController *rootViewController = [UIApplication sharedApplication].delegate.window.rootViewController;
+
+    [RNSplashScreen showSplash:@"LaunchScreen" inRootView:rootViewController.view];
 }
 
 @end
