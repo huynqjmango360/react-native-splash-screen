@@ -1,79 +1,76 @@
-/**
- * SplashScreen
- * 启动屏
- * from：http://www.devio.org
- * Author:CrazyCodeBoy
- * GitHub:https://github.com/crazycodeboy
- * Email:crazycodeboy@gmail.com
- */
-
 #import "RNSplashScreen.h"
 #import <React/RCTBridge.h>
+#import <React/RCTLog.h>
+#import <UIKit/UIKit.h>
 
 static bool waiting = true;
 static bool addedJsLoadErrorObserver = false;
-static UIView* loadingView = nil;
+static UIViewController *splashViewController = nil;
 
 @implementation RNSplashScreen
 - (dispatch_queue_t)methodQueue{
     return dispatch_get_main_queue();
 }
+
 RCT_EXPORT_MODULE(SplashScreen)
 
-+ (void)show {
-    if (!addedJsLoadErrorObserver) {
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(jsLoadError:) name:RCTJavaScriptDidFailToLoadNotification object:nil];
-        addedJsLoadErrorObserver = true;
-    }
+RCT_EXPORT_METHOD(hide) {
+    [RNSplashScreen hide];
+}
 
-    while (waiting) {
-        NSDate* later = [NSDate dateWithTimeIntervalSinceNow:0.1];
-        [[NSRunLoop mainRunLoop] runUntilDate:later];
+RCT_EXPORT_METHOD(show) {
+    [RNSplashScreen show];
+}
+
++ (void)initialize {
+    if (!addedJsLoadErrorObserver) {
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(jsLoadError:)
+                                                     name:RCTJavaScriptDidFailToLoadNotification
+                                                   object:nil];
+        addedJsLoadErrorObserver = true;
     }
 }
 
-+ (void)showSplash:(NSString*)splashScreen inRootView:(UIView*)rootView {
-    if (!loadingView) {
-        UIStoryboard *laucnhScreeen = [UIStoryboard storyboardWithName:splashScreen bundle:NSBundle.mainBundle];
++ (void)show {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (!splashViewController) {
+            RCTLogInfo(@"Loading LaunchScreen storyboard...");
+            UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"LaunchScreen" bundle:nil];
+            splashViewController = [storyboard instantiateInitialViewController];
 
-//        loadingView = [[[NSBundle mainBundle] loadNibNamed:splashScreen owner:self options:nil] objectAtIndex:0];
-        loadingView = [[laucnhScreeen instantiateInitialViewController] view];
-        CGRect frame = rootView.frame;
-        frame.origin = CGPointMake(0, 0);
-        loadingView.frame = frame;
+            if (!splashViewController) {
+                RCTLogError(@"Failed to load LaunchScreen storyboard");
+                return;
+            }
 
-    }
-    waiting = false;
-
-    [rootView addSubview:loadingView];
+            UIWindow *window = [UIApplication sharedApplication].delegate.window;
+            splashViewController.view.frame = [UIScreen mainScreen].bounds;
+            [window addSubview:splashViewController.view];
+        }
+    });
 }
 
 + (void)hide {
-    if (waiting) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            waiting = false;
-        });
-    } else {
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            [loadingView removeFromSuperview];
-        });
-    }
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (splashViewController) {
+            [UIView transitionWithView:splashViewController.view
+                              duration:0.3
+                               options:UIViewAnimationOptionTransitionCrossDissolve
+                            animations:^{
+                splashViewController.view.alpha = 0.5;
+            } completion:^(BOOL finished) {
+                [splashViewController.view removeFromSuperview];
+                splashViewController = nil;
+            }];
+        }
+    });
 }
 
 + (void) jsLoadError:(NSNotification*)notification
 {
     // If there was an error loading javascript, hide the splash screen so it can be shown.  Otherwise the splash screen will remain forever, which is a hassle to debug.
     [RNSplashScreen hide];
-}
-
-RCT_EXPORT_METHOD(hide) {
-    [RNSplashScreen hide];
-}
-
-RCT_EXPORT_METHOD(show: (BOOL*)fullScreen ) {
-    UIViewController *rootViewController = [UIApplication sharedApplication].delegate.window.rootViewController;
-
-    [RNSplashScreen showSplash:@"LaunchScreen" inRootView:rootViewController.view];
 }
 
 @end
